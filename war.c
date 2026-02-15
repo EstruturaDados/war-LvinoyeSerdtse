@@ -1,46 +1,112 @@
 #include <stdio.h>
 #include <string.h>
-#define STRING_LENGTH 50 // definindo de maneira fixa o numero total de caracteres para ser referenciado 
-// criando a struct 'Territorio'
+#include <stdlib.h>
+#include <time.h>
+
+#define STRING_LENGTH 50
+
 typedef struct {
-char nome[STRING_LENGTH];
-int tropas;
-char cor[STRING_LENGTH];
-}Territorio;
-// Criando um array de 5 slots para cada gravação usando a struct 'Territorio' nele
-Territorio beligerantes[5];
-int i = 0;
-int main()
-{
+    char nome[STRING_LENGTH];
+    int tropas;
+    char cor[STRING_LENGTH];
+} Territorio;
+
+void atacar(Territorio* atacante, Territorio* defensor) {
+    if (strcmp(atacante->cor, defensor->cor) == 0) 
+    {
+        printf("Não podes atacar o proprio territorio!");
+    return;
+    }
+    int dadoAtaque = (rand() % 6) + 1; 
+    int dadoDefesa = (rand() % 6) + 1;
+    
+    
+    printf("\nDADOS JOGADOS!\n");
+
+
+    if (dadoAtaque > dadoDefesa) {   
+        int tropasTransferidas = atacante->tropas / 2; // se o ataque foi certeiro, o pais atacante conquista tal territorio e move suas tropas para la.
+        printf("\nAtaque certeiro = territorio conquistado! %d tropas movidas para %s.\n", tropasTransferidas, defensor->nome);
+        printf("%s (ATAQUE) obteve %d pontos.\n%s (DEFESA) obteve %d pontos.\n", atacante->nome, dadoAtaque, defensor->nome, dadoDefesa);
+        snprintf(defensor->nome, STRING_LENGTH, "[ANEXADO] %s", atacante->nome);
+        strcpy(defensor->cor, atacante->cor);
+        
+        defensor->tropas = tropasTransferidas; 
+        atacante->tropas -= tropasTransferidas;
+    } else {
+        if (dadoAtaque < dadoDefesa) 
+        {
+        printf("%s (ATAQUE) obteve %d pontos.\n%s (DEFESA) obteve %d pontos.\n", atacante->nome, dadoAtaque, defensor->nome, dadoDefesa);
+        printf("Aqui nao tem bobo nao! Com isso, %s perdeu uma de suas tropas.\n", atacante->nome);
+        atacante->tropas--;
+        }
+    }
+}
+
+void liberarMemoria(Territorio* beligerantes) {
+    if (beligerantes != NULL) {
+        free(beligerantes);
+    }
+}
+
+int main() {
+    srand(time(NULL)); // Inicializa a semente para os dados serem aleatórios
+    int TotalTerritorios;
+    int i = 0;
+
     printf("CADASTRE OS TERRITORIOS\n");
-    printf("=======================");
-    while (i<5) // esse contador garante que, assim que 5 cadastros sejam feitos, o loop se feche.
-     {
-        printf("\n%d - ", i+1);
-        printf("NOME DO TERRITORIO:");
+    printf("=======================\n");
+    printf("Quantos territorios deseja cadastrar? ");
+    scanf("%d", &TotalTerritorios);
+    while(getchar() != '\n'); 
+
+    Territorio* beligerantes = (Territorio*) calloc(TotalTerritorios, sizeof(Territorio));
+
+    if (beligerantes == NULL) {
+        printf("Erro ao alocar memoria.\n");
+        return 1;
+    }
+
+    while (i < TotalTerritorios) {
+        printf("\nTerritorio %d - \n", i + 1);
+        printf("NOME: ");
         fgets(beligerantes[i].nome, STRING_LENGTH, stdin);
-        beligerantes[i].nome[strcspn(beligerantes[i].nome, "\n")] = 0; // com isso eu garanto que a leitura da entrada seja feita corretamente apos dar o enter.
+        beligerantes[i].nome[strcspn(beligerantes[i].nome, "\n")] = 0;
 
-        printf("\nNUMERO DE TROPAS:");
+        printf("NUMERO DE TROPAS: ");
         scanf("%d", &beligerantes[i].tropas);
-        while(getchar()!= '\n'); // motivo identico ao qual esta na linha 22, porem, se tratando de um inteiro (int) e nao string (cadeia de caracteres), assim fica mais facil.
+        while(getchar() != '\n');
 
-        printf("\nCOR DO TERRITORIO:");
+        printf("COR: ");
         fgets(beligerantes[i].cor, STRING_LENGTH, stdin);
         beligerantes[i].cor[strcspn(beligerantes[i].cor, "\n")] = 0;
         
-        i++; // incremento. i começa como 0, realiza operações enquanto é lido como 4, e na sexta vez, em que ele vira 5, o codigo pula, assim realizando as 5 vezes que mirei.
+        i++;
     }
-    printf("=======================\n");
-    printf("TERRITORIOS BELIGERANTES:\n");
-// imprimindo os territorios cadastrados.
-    for (i = 0; i<5; i++) 
-    {
-        printf("=======================\n");
-        printf("%d - ", i+1); // fiz isso so para aparecer um "contador" antes do nome do territorio.
-        printf("NOME DO TERRITORIO: %s\n", beligerantes[i].nome);
-        printf("NUMERO DE TROPAS: %d\n", beligerantes[i].tropas);
-        printf("COR DO TERRITORIO: %s\n", beligerantes[i].cor);
+
+    int op = 1;
+    while (op != 0) {
+        printf("\n=== MAPA ATUAL ===\n");
+        for (int j = 0; j < TotalTerritorios; j++) {
+            printf("[%d] %s (%s) - Tropas: %d\n", j + 1, beligerantes[j].nome, beligerantes[j].cor, beligerantes[j].tropas);
+        }
+
+        int atk, def;
+        printf("\nID Atacante (1-%d) ou 0 para sair: ", TotalTerritorios);
+        scanf("%d", &atk);
+        if (atk == 0) break;
+
+        printf("ID Defensor (1-%d): ", TotalTerritorios);
+        scanf("%d", &def);
+
+        if (atk > 0 && atk <= TotalTerritorios && def > 0 && def <= TotalTerritorios && atk != def) {
+            atacar(&beligerantes[atk - 1], &beligerantes[def - 1]);
+        } else {
+            printf("\nEscolha de IDs invalida!\n");
+        }
     }
-return 0;
+
+    liberarMemoria(beligerantes);
+    printf("\nJogo finalizado.\n");
+    return 0;
 }
